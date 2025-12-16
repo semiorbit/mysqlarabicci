@@ -1,0 +1,8 @@
+[Unit]
+Description=Watch MySQL charset Index.xml for changes
+
+[Path]
+PathChanged=/usr/share/mysql/charsets/Index.xml
+
+[Install]
+WantedBy=multi-user.target

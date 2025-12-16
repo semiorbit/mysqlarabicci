@@ -1,0 +1,6 @@
+[Unit]
+Description=Inject Arabic utf8 collation into MySQL charset index
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/mysqlarabicci --inject

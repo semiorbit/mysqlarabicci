@@ -1,0 +1,134 @@
+#!/bin/bash
+set -euo pipefail
+
+# ----------------------------
+#  Parse arguments
+#
+#  Load config
+#
+#  Dispatch to inject / reject / detect
+#
+#  Optionally restart MySQL
+#
+#  Update config + watcher on --update
+# ----------------------------
+
+# ----------------------------
+# COMMANDS LIST
+# ----------------------------
+#  mysqlarabicci --inject [--restart]
+#  mysqlarabicci --reject [--restart]
+#  mysqlarabicci --check
+#  mysqlarabicci --update
+#  mysqlarabicci --help
+# ----------------------------
+
+CONF="/etc/mysqlarabicci/mysqlarabicci.conf"
+LIB="/usr/local/lib/mysqlarabicci"
+
+die() {
+  echo "mysqlarabicci: $*" >&2
+  exit 1
+}
+
+usage() {
+  cat <<EOF
+mysqlarabicci --inject [--restart]
+mysqlarabicci --reject [--restart]
+mysqlarabicci --check
+mysqlarabicci --update
+mysqlarabicci --help
+
+Commands:
+  --inject            Inject Arabic utf8 collation
+  --inject --restart  Inject and restart MySQL
+  --reject            Remove injected collation
+  --reject --restart  Remove and restart MySQL
+  --check             Check if collation is injected
+  --update            Re-detect MySQL version and update configuration
+  --help              Show this help
+EOF
+}
+
+# config must exist except for --help
+if [ "${1:-}" != "--help" ]; then
+  [ -f "$CONF" ] || die "config not found: $CONF"
+  # shellcheck disable=SC1090
+  source "$CONF"
+fi
+
+case "${1:-}" in
+
+  --inject)
+    source "$LIB/inject.sh"
+    inject
+    if [ "${2:-}" = "--restart" ]; then
+      systemctl restart "$MYSQL_SERVICE"
+    fi
+    ;;
+
+  --reject)
+    source "$LIB/reject.sh"
+    reject
+    if [ "${2:-}" = "--restart" ]; then
+      systemctl restart "$MYSQL_SERVICE"
+    fi
+    ;;
+
+  --check)
+    if grep -q "$MARKER" "$INDEX_XML"; then
+      echo "Injected"
+      exit 0
+    else
+      echo "Not injected"
+      exit 1
+    fi
+    ;;
+
+  --update)
+    source "$LIB/detect_mysql.sh"
+
+    # run detection and capture output
+    eval "$("$LIB/detect_mysql.sh")"
+
+    echo "Detected MySQL version: $MYSQL_VERSION"
+    echo "Detected Index.xml path:"
+    echo "  $INDEX_XML"
+    echo
+
+    read -rp "Apply this configuration? [y/N]: " CONFIRM
+    [ "$CONFIRM" = "y" ] || die "update aborted"
+
+    # rewrite config
+    cat > "$CONF" <<EOF
+MYSQL_VERSION=$MYSQL_VERSION
+INDEX_XML=$INDEX_XML
+MYSQL_SERVICE=mysqld
+
+MARKER=utf8_arabic_ci
+SNIPPET=/usr/local/lib/mysqlarabicci/utf8_arabic_ci.xml
+EOF
+
+    # rewrite systemd path unit
+    cat > /etc/systemd/system/mysqlarabicci.path <<EOF
+[Path]
+PathChanged=$INDEX_XML
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+    systemctl daemon-reload
+    systemctl restart mysqlarabicci.path
+
+    echo "Configuration updated."
+    ;;
+
+  --help|"")
+    usage
+    ;;
+
+  *)
+    die "unknown command: $1"
+    ;;
+esac

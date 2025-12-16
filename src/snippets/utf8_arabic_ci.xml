@@ -1,0 +1,27 @@
+<!-- mysqlarabicci BEGIN -->
+
+<collation name="utf8_arabic_ci" id="1029">
+    <rules>
+        <reset>\u0627</reset>   <!-- Alef 'ا' -->
+        <i>\u0623</i>           <!-- Alef With Hamza Above 'أ' -->
+        <i>\u0625</i>           <!-- Alef With Hamza Below 'إ' -->
+        <i>\u0622</i>           <!-- Alef With Madda Above 'آ' -->
+    </rules>
+    <rules>
+        <reset>\u0629</reset>   <!-- Teh Marbuta 'ة' -->
+        <i>\u0647</i>           <!-- Heh 'ه' -->
+    </rules>
+    <rules>
+        <reset>\u0000</reset>   <!-- Unicode value of NULL  -->
+        <i>\u064E</i>           <!-- Fatha 'َ' -->
+        <i>\u064F</i>           <!-- Damma 'ُ' -->
+        <i>\u0650</i>           <!-- Kasra 'ِ' -->
+        <i>\u0651</i>           <!-- Shadda 'ّ' -->
+        <i>\u064F</i>           <!-- Sukun 'ْ' -->
+        <i>\u064B</i>           <!-- Fathatan 'ً' -->
+        <i>\u064C</i>           <!-- Dammatan 'ٌ' -->
+        <i>\u064D</i>           <!-- Kasratan 'ٍ' -->
+    </rules>
+</collation>
+
+<!-- mysqlarabicci END -->
